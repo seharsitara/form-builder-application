@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCircle2, Plus, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { FormDefinition, Question, QuestionOption, QuestionType, Submission } from "@/lib/types";
+import { FormDefinition, Question, QuestionOption, QuestionType } from "@/lib/types";
 import { generateId } from "@/lib/utils";
 import { saveForm, submitForm, exportResponsesToCsv, listSubmissions } from "@/lib/api";
 import { getSession } from "@/lib/auth";
+import { useFormBuilder } from "@/context/form-builder-context";
 import { Banner } from "./banner";
 import { FormDetailsCard } from "./form-details-card";
 import { QuestionCard, QUESTION_LABELS } from "./question-card";
@@ -16,75 +18,49 @@ import { PreviewCard } from "./preview-card";
 import { ResponsesCard } from "./responses-card";
 import { ShareCard } from "./share-card";
 
+type SectionKey = "build" | "preview" | "responses";
+
+const DRAFT_KEY = "form_builder_draft";
+
 export type FormBuilderPageProps = {
-  initialTitle?: string;
+  section?: SectionKey;
 };
 
-export function FormBuilderPage({ initialTitle = "Untitled form" }: FormBuilderPageProps) {
-  const [banner, setBanner] = useState<{ tone: "success" | "error" | "info"; message: string } | null>(
-    null
-  );
+export function FormBuilderPage({ section = "build" }: FormBuilderPageProps) {
+  const router = useRouter();
+  const { form, setForm, answers, setAnswers, responses, setResponses, hasSubmitted, setHasSubmitted, totalMarks } = useFormBuilder();
+  const [banner, setBanner] = useState<{ tone: "success" | "error" | "info"; message: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [responses, setResponses] = useState<Submission[]>([]);
   const [session] = useState(() => getSession());
-  const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  const [form, setForm] = useState<FormDefinition>(() => {
-    // Use deterministic seed values during SSR to avoid hydration mismatch, then swap on mount.
-    return {
-      id: "form-seed",
-      title: initialTitle,
-      description: "Describe the purpose of this form.",
-      shareLink: "https://forms.local/form-seed",
-      settings: {
-        quizMode: false,
-        singleSubmission: false,
-        isClosed: false,
-        showResult: true,
-      },
-      questions: [
-        {
-          id: "q-seed",
-          title: "Untitled question",
-          description: "",
-          type: "short_text",
-          required: true,
-          marks: 1,
-        },
-      ],
-    };
-  });
-
-  const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
+  // Hydrate draft so state persists across section pages.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(DRAFT_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as FormDefinition;
+      setForm(parsed);
+    } catch {
+      // ignore malformed drafts
+    }
+  }, []);
 
   // Load stored submissions for this form on mount when IDs are finalized.
   useEffect(() => {
     if (form.id === "form-seed") return;
     listSubmissions(form.id).then((subs) => setResponses(subs));
-  }, [form.id]);
+  }, [form.id, setResponses]);
 
-  const totalMarks = useMemo(
-    () => form.questions.reduce((sum, q) => sum + (q.marks ?? 0), 0),
-    [form.questions]
-  );
-
-  // Replace seed IDs with generated IDs once on the client to keep SSR/CSR in sync.
+  // Persist draft on change so other section pages see the same state.
   useEffect(() => {
-    setForm((prev) => {
-      if (prev.id !== "form-seed") return prev;
-      const newId = generateId("form");
-      const updatedQuestions = prev.questions.map((q) =>
-        q.id === "q-seed" ? { ...q, id: generateId("q") } : q
-      );
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      return {
-        ...prev,
-        id: newId,
-        shareLink: origin ? `${origin}/forms/${newId}` : `https://forms.local/${newId}`,
-        questions: updatedQuestions,
-      };
-    });
-  }, []);
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch {
+      // ignore quota issues
+    }
+  }, [form]);
 
   const setFormPartial = (patch: Partial<FormDefinition>) => setForm((prev) => ({ ...prev, ...patch }));
 
@@ -223,12 +199,22 @@ export function FormBuilderPage({ initialTitle = "Untitled form" }: FormBuilderP
 
   const handleSave = async () => {
     setBanner(null);
-    try {
-      await saveForm(form);
-      setBanner({ tone: "success", message: "Form saved." });
-    } catch {
-      setBanner({ tone: "error", message: "Could not save form." });
+    if (!session?.token) {
+      setBanner({ tone: "error", message: "Sign in to save this form to the server." });
+      return;
     }
+    try {
+      const saved = await saveForm(form);
+      setForm(saved);
+      setBanner({ tone: "success", message: "Form saved to the API." });
+    } catch (error) {
+      setBanner({ tone: "error", message: (error as Error).message || "Could not save form." });
+    }
+  };
+
+  const goTo = (key: SectionKey) => {
+    const path = key === "build" ? "/form-builder/build" : `/form-builder/${key}`;
+    router.push(path);
   };
 
   const handleExport = () => {
@@ -258,76 +244,116 @@ export function FormBuilderPage({ initialTitle = "Untitled form" }: FormBuilderP
 
   return (
     <div className="min-h-screen px-4 pb-16 pt-10 text-neutral-900">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="flex flex-col gap-4 rounded-2xl border border-white/20 bg-white/80 p-6 shadow-lg backdrop-blur">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm text-neutral-500">Form Builder</p>
-              <h1 className="text-3xl font-semibold">Create a new form</h1>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCopyLink} className="gap-2">
-                <Share2 size={16} /> Share link
-              </Button>
-              <Button onClick={handleSave} className="gap-2">
-                <CheckCircle2 size={16} /> Save draft
-              </Button>
-            </div>
+      <div className="mx-auto flex max-w-6xl gap-6">
+        <aside className="sticky top-6 hidden w-64 shrink-0 flex-col gap-3 rounded-2xl border border-white/30 bg-white/80 p-4 shadow-lg backdrop-blur md:flex">
+          <div className="mb-2 text-sm font-semibold text-neutral-700">Navigate</div>
+          {[{ key: "build", label: "Build form" }, { key: "preview", label: "Preview" }, { key: "responses", label: "Responses" }].map((item) => (
+            <Button key={item.key} variant={section === item.key ? "primary" : "ghost"} className="justify-start" onClick={() => goTo(item.key as SectionKey)}>
+              {item.label}
+            </Button>
+          ))}
+          <div className="mt-3 border-t pt-3 text-xs text-neutral-600">
+            <div>Quiz mode: {form.settings.quizMode ? "on" : "off"}</div>
+            <div>Questions: {form.questions.length}</div>
+            {form.settings.quizMode && <div>Total marks: {totalMarks}</div>}
           </div>
-          <div className="flex flex-wrap gap-2 text-sm text-neutral-600">
-            <Badge tone="info">Quiz mode {form.settings.quizMode ? "on" : "off"}</Badge>
-            <Badge tone="neutral">Questions: {form.questions.length}</Badge>
-            {form.settings.quizMode && <Badge tone="success">Total marks: {totalMarks}</Badge>}
-            <Badge tone="neutral">Share: {form.shareLink}</Badge>
-          </div>
-          {banner && <Banner tone={banner.tone} message={banner.message} />}
-        </header>
+        </aside>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1.1fr]">
-          <div className="space-y-4">
-            <FormDetailsCard form={form} onUpdate={setFormPartial} onCopyLink={handleCopyLink} />
+        <div className="flex-1 space-y-6">
+          <header className="flex flex-col gap-4 rounded-2xl border border-white/20 bg-white/80 p-6 shadow-lg backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-neutral-500">Form Builder</p>
+                <h1 className="text-3xl font-semibold">Create a new form</h1>
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleCopyLink} className="gap-2">
+                  <Share2 size={16} /> Share link
+                </Button>
+                <Button onClick={handleSave} className="gap-2">
+                  <CheckCircle2 size={16} /> Save draft
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 text-sm text-neutral-600">
+              <Badge tone="info">Quiz mode {form.settings.quizMode ? "on" : "off"}</Badge>
+              <Badge tone="neutral">Questions: {form.questions.length}</Badge>
+              {form.settings.quizMode && <Badge tone="success">Total marks: {totalMarks}</Badge>}
+              <Badge tone="neutral">Share: {form.shareLink}</Badge>
+            </div>
+            {banner && <Banner tone={banner.tone} message={banner.message} />}
+          </header>
 
-            {form.questions.map((q, idx) => (
-              <QuestionCard
-                key={q.id}
-                question={q}
-                index={idx}
+          {section === "build" && (
+            <section className="space-y-4 rounded-2xl border border-white/30 bg-white/80 p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Build form</h2>
+                <Badge tone="neutral">Builder</Badge>
+              </div>
+
+              <FormDetailsCard form={form} onUpdate={setFormPartial} onCopyLink={handleCopyLink} />
+
+              {form.questions.map((q, idx) => (
+                <QuestionCard
+                  key={q.id}
+                  question={q}
+                  index={idx}
+                  quizMode={form.settings.quizMode}
+                  onUpdate={(patch) => updateQuestion(q.id, patch)}
+                  onRemove={() => removeQuestion(q.id)}
+                  onMove={(dir) => moveQuestion(q.id, dir)}
+                  onAddOption={() => addOption(q.id)}
+                  onUpdateOption={(optId, label) => updateOption(q.id, optId, label)}
+                  onRemoveOption={(optId) => removeOption(q.id, optId)}
+                />
+              ))}
+
+              <Card className="border-dashed border-neutral-300">
+                <CardContent className="flex flex-wrap gap-3 p-4">
+                  {(Object.keys(QUESTION_LABELS) as QuestionType[]).map((type) => (
+                    <Button key={type} variant="outline" className="gap-2" onClick={() => addQuestion(type)}>
+                      <Plus size={14} /> {QUESTION_LABELS[type]}
+                    </Button>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <ShareCard shareLink={form.shareLink} onCopy={handleCopyLink} />
+            </section>
+          )}
+
+          {section === "preview" && (
+            <section className="space-y-4 rounded-2xl border border-white/30 bg-white/80 p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Preview</h2>
+                <Badge tone="info">Live</Badge>
+              </div>
+              <PreviewCard
+                questions={form.questions}
+                answers={answers}
                 quizMode={form.settings.quizMode}
-                onUpdate={(patch) => updateQuestion(q.id, patch)}
-                onRemove={() => removeQuestion(q.id)}
-                onMove={(dir) => moveQuestion(q.id, dir)}
-                onAddOption={() => addOption(q.id)}
-                onUpdateOption={(optId, label) => updateOption(q.id, optId, label)}
-                onRemoveOption={(optId) => removeOption(q.id, optId)}
+                submitting={submitting}
+                onChangeAnswer={handleAnswerChange}
+                onSubmit={handleSubmit}
+                onClear={() => setAnswers({})}
               />
-            ))}
+            </section>
+          )}
 
-            <Card className="border-dashed border-neutral-300">
-              <CardContent className="flex flex-wrap gap-3 p-4">
-                {(Object.keys(QUESTION_LABELS) as QuestionType[]).map((type) => (
-                  <Button key={type} variant="outline" className="gap-2" onClick={() => addQuestion(type)}>
-                    <Plus size={14} /> {QUESTION_LABELS[type]}
-                  </Button>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-4">
-            <PreviewCard
-              questions={form.questions}
-              answers={answers}
-              quizMode={form.settings.quizMode}
-              submitting={submitting}
-              onChangeAnswer={handleAnswerChange}
-              onSubmit={handleSubmit}
-              onClear={() => setAnswers({})}
-            />
-
-            <ResponsesCard responses={responses} onExport={handleExport} onRefresh={handleRefreshResponses} />
-
-            <ShareCard shareLink={form.shareLink} onCopy={handleCopyLink} />
-          </div>
+          {section === "responses" && (
+            <section className="space-y-4 rounded-2xl border border-white/30 bg-white/80 p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">Responses</h2>
+                <Badge tone="success">Latest</Badge>
+              </div>
+              <ResponsesCard
+                questions={form.questions}
+                responses={responses}
+                onExport={handleExport}
+                onRefresh={handleRefreshResponses}
+              />
+            </section>
+          )}
         </div>
       </div>
     </div>

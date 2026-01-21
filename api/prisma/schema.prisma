@@ -6,6 +6,62 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  name      String
+  role      UserRole   @default(creator)
+  password  String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  forms     Form[]
+  responses Response[]
+}
+
+model Form {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  isQuiz      Boolean    @default(false)
+  createdAt   DateTime   @default(now())
+  creatorId   String
+  creator     User       @relation(fields: [creatorId], references: [id])
+  questions   Question[]
+  responses   Response[]
+}
+
+model Question {
+  id       String       @id @default(uuid())
+  label    String
+  type     QuestionType
+  required Boolean      @default(false)
+  options  String[]     @default([])
+  order    Int          @default(0)
+  formId   String
+  answers  Answer[]
+  form     Form         @relation(fields: [formId], references: [id])
+}
+
+model Response {
+  id         String   @id @default(uuid())
+  respondent String?
+  createdAt  DateTime @default(now())
+  formId     String
+  userId     String?
+  answers    Answer[]
+  form       Form     @relation(fields: [formId], references: [id])
+  user       User?    @relation(fields: [userId], references: [id])
+}
+
+model Answer {
+  id         String   @id @default(uuid())
+  value      String
+  questionId String
+  responseId String
+  question   Question @relation(fields: [questionId], references: [id])
+  response   Response @relation(fields: [responseId], references: [id])
+}
+
 enum UserRole {
   creator
   respondent
@@ -18,60 +74,4 @@ enum QuestionType {
   single_choice
   multi_choice
   dropdown
-}
-
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      UserRole @default(creator)
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  forms     Form[]
-  responses Response[]
-}
-
-model Form {
-  id          String      @id @default(uuid())
-  title       String
-  description String?
-  isQuiz      Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  creator     User        @relation(fields: [creatorId], references: [id])
-  creatorId   String
-  questions   Question[]
-  responses   Response[]
-}
-
-model Question {
-  id        String       @id @default(uuid())
-  label     String
-  type      QuestionType
-  required  Boolean      @default(false)
-  options   String[] @default([])
-  order     Int          @default(0)
-  form      Form         @relation(fields: [formId], references: [id])
-  formId    String
-  answers   Answer[]
-}
-
-model Response {
-  id         String    @id @default(uuid())
-  respondent String?
-  createdAt  DateTime  @default(now())
-  form       Form      @relation(fields: [formId], references: [id])
-  formId     String
-  answers    Answer[]
-  user       User?     @relation(fields: [userId], references: [id])
-  userId     String?
-}
-
-model Answer {
-  id         String   @id @default(uuid())
-  value      String
-  question   Question @relation(fields: [questionId], references: [id])
-  questionId String
-  response   Response @relation(fields: [responseId], references: [id])
-  responseId String
 }

@@ -13,13 +13,15 @@ const auth_module_1 = require("./auth/auth.module");
 const forms_module_1 = require("./forms/forms.module");
 const health_controller_1 = require("./health.controller");
 const prisma_module_1 = require("./prisma/prisma.module");
+const root_controller_1 = require("./root.controller");
+const responses_module_1 = require("./responses/responses.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, users_module_1.UsersModule, auth_module_1.AuthModule, forms_module_1.FormsModule],
-        controllers: [health_controller_1.HealthController],
+        imports: [prisma_module_1.PrismaModule, users_module_1.UsersModule, auth_module_1.AuthModule, forms_module_1.FormsModule, responses_module_1.ResponsesModule],
+        controllers: [health_controller_1.HealthController, root_controller_1.RootController],
         providers: [],
     })
 ], AppModule);

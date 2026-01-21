@@ -1,41 +1,99 @@
-import { AnswerPayload, FormDefinition, Submission } from "./types";
+import { getSession } from "./auth";
+import { AnswerPayload, FormDefinition, Question, Submission } from "./types";
 import { generateId } from "./utils";
 
-const STORAGE_KEY = "form_builder_forms";
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 const SUBMISSION_KEY = "form_builder_submissions";
 
-// Placeholder API layer for demo; replace with real HTTP calls when backend is ready.
+type ApiQuestion = {
+  id: string;
+  label: string;
+  type: Question["type"];
+  required: boolean;
+  options?: string[];
+};
+
+type ApiForm = {
+  id: string;
+  title: string;
+  description?: string | null;
+  isQuiz: boolean;
+  questions: ApiQuestion[];
+};
+
 export async function saveForm(definition: FormDefinition): Promise<FormDefinition> {
-  await delay();
-  persistForm(definition);
-  return definition;
+  const session = getSession();
+  if (!session?.token) {
+    throw new Error("Please sign in to save forms.");
+  }
+
+  const payload = toCreatePayload(definition);
+  const res = await fetch(`${API_BASE}/forms`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await handleResponse<ApiForm>(res);
+  const mapped = mapApiForm(data);
+  return { ...mapped, settings: definition.settings };
 }
 
 export async function loadForm(id: string): Promise<FormDefinition | null> {
-  await delay();
-  return readForm(id);
+  const res = await fetch(`${API_BASE}/forms/${id}`);
+  if (res.status === 404) return null;
+  const data = await handleResponse<ApiForm>(res);
+  return mapApiForm(data);
 }
 
+// Submission endpoints are not available on the API yet; keep local storage for now.
 export async function submitForm(
   definition: FormDefinition,
   answers: AnswerPayload[],
   respondent?: { name?: string; email?: string; id?: string }
 ): Promise<Submission> {
-  await delay();
+  const payload = {
+    respondent: respondent?.name,
+    email: respondent?.email,
+    userId: respondent?.id,
+    answers: answers.map((a) => ({
+      questionId: a.questionId,
+      value: Array.isArray(a.value) ? JSON.stringify(a.value) : String(a.value),
+    })),
+  };
 
+  const res = await fetch(`${API_BASE}/forms/${definition.id}/responses`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await handleResponse<{
+    id: string;
+    createdAt: string;
+    respondent?: string | null;
+    userId?: string | null;
+    answers: { id: string; questionId: string; value: string | string[] }[];
+  }>(res);
+
+  const score = definition.settings.quizMode ? grade(definition, answers) : undefined;
   const maxScore = definition.settings.quizMode
     ? definition.questions.reduce((sum, q) => sum + (q.marks ?? 0), 0)
     : undefined;
 
-  const score = definition.settings.quizMode ? grade(definition, answers) : undefined;
-
   const submission: Submission = {
-    id: generateId("submission"),
-    submittedAt: new Date().toISOString(),
-    respondentName: respondent?.name,
+    id: data.id,
+    submittedAt: data.createdAt,
+    respondentName: data.respondent ?? respondent?.name,
     respondentEmail: respondent?.email,
-    respondentId: respondent?.id,
-    answers,
+    respondentId: data.userId ?? respondent?.id,
+    answers: data.answers.map((a) => ({
+      questionId: a.questionId,
+      value: typeof a.value === "string" ? tryParseValue(a.value) : a.value,
+    })),
     score,
     maxScore,
   };
@@ -45,8 +103,24 @@ export async function submitForm(
 }
 
 export async function listSubmissions(formId: string): Promise<Submission[]> {
-  await delay();
-  return readSubmissions(formId);
+  const res = await fetch(`${API_BASE}/forms/${formId}/responses`);
+  if (!res.ok) {
+    return readSubmissions(formId);
+  }
+  const data = await res.json();
+  return (data as any[]).map((r) => ({
+    id: r.id,
+    submittedAt: r.createdAt,
+    respondentName: r.respondent ?? "",
+    respondentEmail: "",
+    respondentId: r.userId ?? undefined,
+    answers: (r.answers ?? []).map((a: any) => ({
+      questionId: a.questionId,
+      value: typeof a.value === "string" ? tryParseValue(a.value) : a.value,
+    })),
+    score: undefined,
+    maxScore: undefined,
+  }));
 }
 
 export function exportResponsesToCsv(submissions: Submission[]): string {
@@ -74,6 +148,80 @@ export function exportResponsesToCsv(submissions: Submission[]): string {
     .join("\n");
 }
 
+function tryParseValue(raw: string): string | string[] {
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as string[];
+  } catch {
+    // ignore
+  }
+  return raw;
+}
+
+function mapApiForm(apiForm: ApiForm): FormDefinition {
+  return {
+    id: apiForm.id,
+    title: apiForm.title,
+    description: apiForm.description ?? "",
+    shareLink: buildShareLink(apiForm.id),
+    settings: {
+      quizMode: apiForm.isQuiz,
+      singleSubmission: false,
+      isClosed: false,
+      showResult: true,
+    },
+    questions: apiForm.questions.map((q) => ({
+      id: q.id,
+      title: q.label,
+      description: "",
+      type: q.type,
+      required: q.required,
+      options: (q.options ?? []).map((opt) => ({ id: opt, label: opt })),
+      correctAnswers: [],
+      marks: apiForm.isQuiz ? 1 : undefined,
+    })),
+  };
+}
+
+function toCreatePayload(definition: FormDefinition) {
+  return {
+    title: definition.title,
+    description: definition.description,
+    isQuiz: definition.settings.quizMode,
+    questions: definition.questions.map((q, idx) => ({
+      label: q.title,
+      type: q.type,
+      required: Boolean(q.required),
+      options: q.options?.map((opt) => opt.label) ?? [],
+      order: idx,
+    })),
+  };
+}
+
+function buildShareLink(id: string) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return origin ? `${origin}/forms/${id}` : `https://forms.local/${id}`;
+}
+
+async function handleResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const message = await extractError(res);
+    throw new Error(message || "Request failed");
+  }
+  return res.json() as Promise<T>;
+}
+
+async function extractError(res: Response) {
+  try {
+    const data = await res.json();
+    if (typeof data?.message === "string") return data.message;
+    if (Array.isArray(data?.message)) return data.message.join(", ");
+  } catch {
+    // ignore parse errors
+  }
+  return res.statusText;
+}
+
 function grade(definition: FormDefinition, answers: AnswerPayload[]): number {
   return answers.reduce((total, answer) => {
     const question = definition.questions.find((q) => q.id === answer.questionId);
@@ -90,32 +238,6 @@ function grade(definition: FormDefinition, answers: AnswerPayload[]): number {
     const received = answerValues.slice().sort().join("|");
     return total + (correct === received ? question.marks : 0);
   }, 0);
-}
-
-function delay(ms = 250) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function persistForm(def: FormDefinition) {
-  if (typeof window === "undefined") return;
-  const existing = readStore();
-  const next = { ...existing, [def.id]: def };
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-}
-
-function readForm(id: string): FormDefinition | null {
-  const store = readStore();
-  return store[id] ?? null;
-}
-
-function readStore(): Record<string, FormDefinition> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, FormDefinition>) : {};
-  } catch {
-    return {};
-  }
 }
 
 function persistSubmission(formId: string, submission: Submission) {
