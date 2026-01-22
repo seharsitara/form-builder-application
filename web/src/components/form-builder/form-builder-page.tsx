@@ -33,7 +33,6 @@ export function FormBuilderPage({ section = "build" }: FormBuilderPageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [session] = useState(() => getSession());
 
-  // Hydrate draft so state persists across section pages.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const raw = window.localStorage.getItem(DRAFT_KEY);
@@ -42,23 +41,19 @@ export function FormBuilderPage({ section = "build" }: FormBuilderPageProps) {
       const parsed = JSON.parse(raw) as FormDefinition;
       setForm(parsed);
     } catch {
-      // ignore malformed drafts
     }
   }, []);
 
-  // Load stored submissions for this form on mount when IDs are finalized.
   useEffect(() => {
     if (form.id === "form-seed") return;
     listSubmissions(form.id).then((subs) => setResponses(subs));
   }, [form.id, setResponses]);
 
-  // Persist draft on change so other section pages see the same state.
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
     } catch {
-      // ignore quota issues
     }
   }, [form]);
 
@@ -245,14 +240,19 @@ export function FormBuilderPage({ section = "build" }: FormBuilderPageProps) {
   return (
     <div className="min-h-screen px-4 pb-16 pt-10 text-neutral-900">
       <div className="mx-auto flex max-w-6xl gap-6">
-        <aside className="sticky top-6 hidden w-64 shrink-0 flex-col gap-3 rounded-2xl border border-white/30 bg-white/80 p-4 shadow-lg backdrop-blur md:flex">
-          <div className="mb-2 text-sm font-semibold text-neutral-700">Navigate</div>
-          {[{ key: "build", label: "Build form" }, { key: "preview", label: "Preview" }, { key: "responses", label: "Responses" }].map((item) => (
-            <Button key={item.key} variant={section === item.key ? "primary" : "ghost"} className="justify-start" onClick={() => goTo(item.key as SectionKey)}>
+        <aside className="sticky top-6 hidden w-64 shrink-0 flex-col gap-3 rounded-2xl border border-white/20 bg-neutral-900/90 p-4 shadow-xl backdrop-blur md:flex">
+          <div className="mb-3 text-sm font-semibold text-white/90">Navigate</div>
+          {[{ key: "build", label: "Build" }, { key: "preview", label: "Preview" }, { key: "responses", label: "Responses" }].map((item) => (
+            <Button
+              key={item.key}
+              variant="ghost"
+              className={`justify-start rounded-lg border border-white/10 text-white ${section === item.key ? "bg-neutral-900 hover:bg-neutral-900" : "bg-neutral-800 hover:bg-neutral-400"}`}
+              onClick={() => goTo(item.key as SectionKey)}
+            >
               {item.label}
             </Button>
           ))}
-          <div className="mt-3 border-t pt-3 text-xs text-neutral-600">
+          <div className="mt-4 space-y-1 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/80">
             <div>Quiz mode: {form.settings.quizMode ? "on" : "off"}</div>
             <div>Questions: {form.questions.length}</div>
             {form.settings.quizMode && <div>Total marks: {totalMarks}</div>}
@@ -308,8 +308,8 @@ export function FormBuilderPage({ section = "build" }: FormBuilderPageProps) {
                 />
               ))}
 
-              <Card className="border-dashed border-neutral-300">
-                <CardContent className="flex flex-wrap gap-3 p-4">
+              <Card className="border-dashed border-neutral-300 pt-5">
+                <CardContent className="flex flex-wrap gap-3 p-6">
                   {(Object.keys(QUESTION_LABELS) as QuestionType[]).map((type) => (
                     <Button key={type} variant="outline" className="gap-2" onClick={() => addQuestion(type)}>
                       <Plus size={14} /> {QUESTION_LABELS[type]}

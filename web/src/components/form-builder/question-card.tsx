@@ -77,7 +77,7 @@ export function QuestionCard({
           placeholder="Optional description"
           rows={2}
         />
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 pt-2 sm:grid-cols-2">
           <Select
             value={question.type}
             onChange={(e) => onUpdate({ type: e.target.value as QuestionType })}
@@ -103,6 +103,8 @@ export function QuestionCard({
           )}
         </div>
 
+        <div className="" />
+
         {question.type === "short_text" || question.type === "long_text" ? (
           quizMode && (
             <Input
@@ -112,7 +114,7 @@ export function QuestionCard({
             />
           )
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-neutral-700">Options</p>
               <Button variant="ghost" size="sm" className="gap-2" onClick={onAddOption}>

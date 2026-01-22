@@ -69,7 +69,6 @@ export function FormBuilderProvider({ initialTitle = "Untitled form", children }
         setResponses(JSON.parse(respRaw));
       }
     } catch {
-      // ignore hydration errors
     }
   }, []);
 
