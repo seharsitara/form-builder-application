@@ -85,6 +85,10 @@ export default function PublicFormPage() {
       setBanner({ tone: "error", message: "Form is closed for responses." });
       return;
     }
+    if (!respondent.name.trim() || !respondent.email.trim()) {
+      setBanner({ tone: "error", message: "Name and email are required." });
+      return;
+    }
     const missing = validateRequired();
     if (missing.length) {
       setBanner({ tone: "error", message: `Required: ${missing.join(", ")}` });
@@ -149,24 +153,26 @@ export default function PublicFormPage() {
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-neutral-700" htmlFor="respondent-name">
-                    Name
+                    Name <span className="text-red-600">*</span>
                   </label>
                   <Input
                     id="respondent-name"
                     placeholder="Your name"
                     value={respondent.name}
+                    required
                     onChange={(e) => setRespondent((prev) => ({ ...prev, name: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-neutral-700" htmlFor="respondent-email">
-                    Email
+                    Email <span className="text-red-600">*</span>
                   </label>
                   <Input
                     id="respondent-email"
                     placeholder="you@example.com"
                     type="email"
                     value={respondent.email}
+                    required
                     onChange={(e) => setRespondent((prev) => ({ ...prev, email: e.target.value }))}
                   />
                 </div>

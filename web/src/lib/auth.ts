@@ -17,7 +17,7 @@ export async function registerUser(
   name: string,
   email: string,
   password: string,
-  role: UserRole
+  role: UserRole = "admin"
 ): Promise<AuthResult> {
   const data = await postAuth("/auth/register", { name, email, password, role });
   const session: AuthResult = { user: data.user, token: data.accessToken };

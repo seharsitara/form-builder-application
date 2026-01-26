@@ -4,25 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/auth/auth-card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { registerUser } from "@/lib/auth";
 import { UserRole } from "@/lib/types";
-
-const roleLabels: Record<UserRole, string> = {
-  creator: "Form Creator (Admin/User)",
-  respondent: "Respondent",
-  admin: "Admin",
-};
 
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("creator");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const role: UserRole = "admin";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,16 +53,7 @@ export default function RegisterPage() {
               required
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-neutral-700">Role</label>
-            <Select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
-              {(Object.keys(roleLabels) as UserRole[]).map((r) => (
-                <option key={r} value={r}>
-                  {roleLabels[r]}
-                </option>
-              ))}
-            </Select>
-          </div>
+          {/* Role selection removed; accounts are admin by default. */}
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Creating..." : "Create account"}

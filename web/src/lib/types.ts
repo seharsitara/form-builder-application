@@ -5,7 +5,7 @@ export type QuestionType =
   | "multi_choice"
   | "dropdown";
 
-export type UserRole = "creator" | "respondent" | "admin";
+export type UserRole = "admin";
 
 export type User = {
   id: string;
@@ -26,7 +26,7 @@ export type Question = {
   type: QuestionType;
   required?: boolean;
   options?: QuestionOption[];
-  correctAnswers?: string[]; // option ids or free text for short/long
+  correctAnswers?: string[]; 
   marks?: number;
 };
 

@@ -11,6 +11,7 @@ type ApiQuestion = {
   type: Question["type"];
   required: boolean;
   options?: string[];
+  correctAnswers?: string[];
 };
 
 type ApiForm = {
@@ -49,7 +50,7 @@ export async function loadForm(id: string): Promise<FormDefinition | null> {
   return mapApiForm(data);
 }
 
-// Submission endpoints are not available on the API yet; keep local storage for now.
+
 export async function submitForm(
   definition: FormDefinition,
   answers: AnswerPayload[],
@@ -57,8 +58,12 @@ export async function submitForm(
 ): Promise<Submission> {
   const payload = {
     respondent: respondent?.name,
-    email: respondent?.email,
+    respondentEmail: respondent?.email,
     userId: respondent?.id,
+    score: definition.settings.quizMode ? grade(definition, answers) : undefined,
+    maxScore: definition.settings.quizMode
+      ? definition.questions.reduce((sum, q) => sum + (q.marks ?? 0), 0)
+      : undefined,
     answers: answers.map((a) => ({
       questionId: a.questionId,
       value: Array.isArray(a.value) ? JSON.stringify(a.value) : String(a.value),
@@ -75,20 +80,25 @@ export async function submitForm(
     id: string;
     createdAt: string;
     respondent?: string | null;
+    respondentEmail?: string | null;
     userId?: string | null;
+    score?: number | null;
+    maxScore?: number | null;
     answers: { id: string; questionId: string; value: string | string[] }[];
   }>(res);
 
-  const score = definition.settings.quizMode ? grade(definition, answers) : undefined;
-  const maxScore = definition.settings.quizMode
-    ? definition.questions.reduce((sum, q) => sum + (q.marks ?? 0), 0)
-    : undefined;
+  const score = data.score ?? (definition.settings.quizMode ? grade(definition, answers) : undefined);
+  const maxScore =
+    data.maxScore ??
+    (definition.settings.quizMode
+      ? definition.questions.reduce((sum, q) => sum + (q.marks ?? 0), 0)
+      : undefined);
 
   const submission: Submission = {
     id: data.id,
     submittedAt: data.createdAt,
     respondentName: data.respondent ?? respondent?.name,
-    respondentEmail: respondent?.email,
+    respondentEmail: data.respondentEmail ?? respondent?.email,
     respondentId: data.userId ?? respondent?.id,
     answers: data.answers.map((a) => ({
       questionId: a.questionId,
@@ -112,14 +122,14 @@ export async function listSubmissions(formId: string): Promise<Submission[]> {
     id: r.id,
     submittedAt: r.createdAt,
     respondentName: r.respondent ?? "",
-    respondentEmail: "",
+    respondentEmail: r.respondentEmail ?? "",
     respondentId: r.userId ?? undefined,
     answers: (r.answers ?? []).map((a: any) => ({
       questionId: a.questionId,
       value: typeof a.value === "string" ? tryParseValue(a.value) : a.value,
     })),
-    score: undefined,
-    maxScore: undefined,
+    score: r.score ?? undefined,
+    maxScore: r.maxScore ?? undefined,
   }));
 }
 
@@ -177,7 +187,7 @@ function mapApiForm(apiForm: ApiForm): FormDefinition {
       type: q.type,
       required: q.required,
       options: (q.options ?? []).map((opt) => ({ id: opt, label: opt })),
-      correctAnswers: [],
+      correctAnswers: q.correctAnswers ?? [],
       marks: apiForm.isQuiz ? 1 : undefined,
     })),
   };
@@ -193,6 +203,7 @@ function toCreatePayload(definition: FormDefinition) {
       type: q.type,
       required: Boolean(q.required),
       options: q.options?.map((opt) => opt.label) ?? [],
+      correctAnswers: q.correctAnswers ?? [],
       order: idx,
     })),
   };

@@ -51,7 +51,6 @@ export function FormBuilderProvider({ initialTitle = "Untitled form", children }
   const [responses, setResponses] = useState<Submission[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
-  // Hydrate persisted state
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
@@ -72,7 +71,7 @@ export function FormBuilderProvider({ initialTitle = "Untitled form", children }
     }
   }, []);
 
-  // Ensure stable IDs after hydration/seed
+
   useEffect(() => {
     setForm((prev) => {
       if (prev.id !== "form-seed") return prev;
@@ -90,7 +89,6 @@ export function FormBuilderProvider({ initialTitle = "Untitled form", children }
     });
   }, []);
 
-  // Persist form/answers/responses
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
