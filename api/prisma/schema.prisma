@@ -10,7 +10,7 @@ model User {
   id        String     @id @default(uuid())
   email     String     @unique
   name      String
-  role      UserRole   @default(creator)
+  role      UserRole   @default(admin)
   password  String
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -36,6 +36,7 @@ model Question {
   type     QuestionType
   required Boolean      @default(false)
   options  String[]     @default([])
+  correctAnswers String[] @default([])
   order    Int          @default(0)
   formId   String
   answers  Answer[]
@@ -45,6 +46,9 @@ model Question {
 model Response {
   id         String   @id @default(uuid())
   respondent String?
+  respondentEmail String?
+  score      Int?
+  maxScore   Int?
   createdAt  DateTime @default(now())
   formId     String
   userId     String?
@@ -63,8 +67,6 @@ model Answer {
 }
 
 enum UserRole {
-  creator
-  respondent
   admin
 }
 

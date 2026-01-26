@@ -30,6 +30,9 @@ let ResponsesService = class ResponsesService {
         const response = await this.prisma.response.create({
             data: {
                 respondent: dto.respondent,
+                respondentEmail: dto.respondentEmail,
+                score: dto.score,
+                maxScore: dto.maxScore,
                 userId: dto.userId,
                 formId,
                 answers: {

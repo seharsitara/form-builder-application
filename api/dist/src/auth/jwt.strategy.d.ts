@@ -15,7 +15,7 @@ export declare class JwtStrategy extends JwtStrategy_base {
     validate(payload: JwtPayload): Promise<{
         id: string;
         email: string;
-        role: import("../users/entities/user.entity").UserRole;
+        role: "admin";
     }>;
 }
 export {};

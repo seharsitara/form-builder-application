@@ -11,7 +11,7 @@ export class FormsController {
 
   @Post()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
-  @Roles('creator', 'admin')
+  @Roles('admin')
   create(@Body() body: CreateFormDto, @Req() req: any) {
     return this.formsService.create(body, req.user.id);
   }

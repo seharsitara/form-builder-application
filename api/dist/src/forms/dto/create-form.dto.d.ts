@@ -4,6 +4,7 @@ declare class QuestionDto {
     type: QuestionType;
     required: boolean;
     options?: string[];
+    correctAnswers?: string[];
 }
 export declare class CreateFormDto {
     title: string;

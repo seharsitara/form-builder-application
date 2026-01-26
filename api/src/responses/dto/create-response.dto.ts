@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsEmail, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsEmail, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 class AnswerDto {
   @IsString()
@@ -17,7 +17,17 @@ export class CreateResponseDto {
 
   @IsOptional()
   @IsEmail()
-  email?: string;
+  respondentEmail?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  score?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  maxScore?: number;
 
   @IsOptional()
   @IsString()

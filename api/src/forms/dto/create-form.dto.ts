@@ -22,6 +22,11 @@ class QuestionDto {
   @IsArray()
   @IsString({ each: true })
   options?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  correctAnswers?: string[];
 }
 
 export class CreateFormDto {

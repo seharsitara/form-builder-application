@@ -5,7 +5,14 @@ export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
     register(body: RegisterDto): Promise<{
-        user: Omit<import("../users/entities/user.entity").User, "password">;
+        user: {
+            email: string;
+            name: string;
+            role: import("../users/entities/user.entity").UserRole;
+            id: string;
+        } & {
+            role: "admin";
+        };
         accessToken: string;
     }>;
     login(body: LoginDto): Promise<{

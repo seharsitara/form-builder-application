@@ -26,7 +26,9 @@ __decorate([
 ], AnswerDto.prototype, "value", void 0);
 class CreateResponseDto {
     respondent;
-    email;
+    respondentEmail;
+    score;
+    maxScore;
     userId;
     answers;
 }
@@ -40,7 +42,19 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEmail)(),
     __metadata("design:type", String)
-], CreateResponseDto.prototype, "email", void 0);
+], CreateResponseDto.prototype, "respondentEmail", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateResponseDto.prototype, "score", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateResponseDto.prototype, "maxScore", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

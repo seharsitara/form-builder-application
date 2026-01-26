@@ -10,6 +10,7 @@ export declare class FormsService {
             type: import("@prisma/client").$Enums.QuestionType;
             required: boolean;
             options: string[];
+            correctAnswers: string[];
             order: number;
             formId: string;
         }[];
@@ -28,6 +29,7 @@ export declare class FormsService {
             type: import("@prisma/client").$Enums.QuestionType;
             required: boolean;
             options: string[];
+            correctAnswers: string[];
             order: number;
             formId: string;
         }[];
@@ -46,6 +48,7 @@ export declare class FormsService {
             type: import("@prisma/client").$Enums.QuestionType;
             required: boolean;
             options: string[];
+            correctAnswers: string[];
             order: number;
             formId: string;
         }[];

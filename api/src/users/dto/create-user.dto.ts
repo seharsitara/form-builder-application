@@ -14,6 +14,6 @@ export class CreateUserDto {
   password: string;
 
   @IsOptional()
-  @IsIn(['creator', 'respondent', 'admin'])
-  role?: UserRole = 'creator';
+  @IsIn(['admin'])
+  role?: UserRole = 'admin';
 }

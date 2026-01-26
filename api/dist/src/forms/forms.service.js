@@ -30,6 +30,7 @@ let FormsService = class FormsService {
                         type: q.type,
                         required: q.required,
                         options: q.options ?? [],
+                        correctAnswers: q.correctAnswers ?? [],
                         order: index,
                     })),
                 },

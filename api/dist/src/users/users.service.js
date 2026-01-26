@@ -17,8 +17,11 @@ let UsersService = class UsersService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    toAdmin(user) {
+        return { ...user, role: 'admin' };
+    }
     async findAll() {
-        return this.prisma.user.findMany({
+        const users = await this.prisma.user.findMany({
             select: {
                 id: true,
                 email: true,
@@ -28,12 +31,13 @@ let UsersService = class UsersService {
                 updatedAt: true,
             },
         });
+        return users.map((u) => this.toAdmin(u));
     }
     async findByEmail(email) {
         return this.prisma.user.findUnique({ where: { email } });
     }
     async findOne(id) {
-        return this.prisma.user.findUnique({
+        const user = await this.prisma.user.findUnique({
             where: { id },
             select: {
                 id: true,
@@ -44,13 +48,14 @@ let UsersService = class UsersService {
                 updatedAt: true,
             },
         });
+        return user ? this.toAdmin(user) : null;
     }
     async create(dto) {
         const created = await this.prisma.user.create({
             data: {
                 email: dto.email,
                 name: dto.name,
-                role: dto.role ?? 'creator',
+                role: dto.role ?? 'admin',
                 password: dto.password,
             },
             select: {
@@ -62,7 +67,7 @@ let UsersService = class UsersService {
                 updatedAt: true,
             },
         });
-        return created;
+        return this.toAdmin(created);
     }
 };
 exports.UsersService = UsersService;

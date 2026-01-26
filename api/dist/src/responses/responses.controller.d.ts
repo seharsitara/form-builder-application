@@ -7,27 +7,33 @@ export declare class ResponsesController {
         answers: {
             id: string;
             value: string;
-            questionId: string;
             responseId: string;
+            questionId: string;
         }[];
     } & {
         id: string;
-        respondent: string | null;
         createdAt: Date;
-        formId: string;
+        respondent: string | null;
+        respondentEmail: string | null;
+        score: number | null;
+        maxScore: number | null;
         userId: string | null;
+        formId: string;
     }>;
     findAll(formId: string): Promise<{
         answers: {
             value: string | string[];
             id: string;
-            questionId: string;
             responseId: string;
+            questionId: string;
         }[];
         id: string;
-        respondent: string | null;
         createdAt: Date;
-        formId: string;
+        respondent: string | null;
+        respondentEmail: string | null;
+        score: number | null;
+        maxScore: number | null;
         userId: string | null;
+        formId: string;
     }[]>;
 }

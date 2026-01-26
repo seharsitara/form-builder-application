@@ -4,7 +4,9 @@ declare class AnswerDto {
 }
 export declare class CreateResponseDto {
     respondent?: string;
-    email?: string;
+    respondentEmail?: string;
+    score?: number;
+    maxScore?: number;
     userId?: string;
     answers: AnswerDto[];
 }
