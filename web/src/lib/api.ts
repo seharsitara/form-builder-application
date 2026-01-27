@@ -1,8 +1,7 @@
 import { getSession } from "./auth";
 import { AnswerPayload, FormDefinition, Question, Submission } from "./types";
 import { generateId } from "./utils";
-
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
+import { API_BASE } from "./config";
 const SUBMISSION_KEY = "form_builder_submissions";
 
 type ApiQuestion = {
@@ -163,7 +162,6 @@ function tryParseValue(raw: string): string | string[] {
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed as string[];
   } catch {
-    // ignore
   }
   return raw;
 }
@@ -228,7 +226,6 @@ async function extractError(res: Response) {
     if (typeof data?.message === "string") return data.message;
     if (Array.isArray(data?.message)) return data.message.join(", ");
   } catch {
-    // ignore parse errors
   }
   return res.statusText;
 }

@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getSession, logout } from "@/lib/auth";
+import { API_BASE } from "@/lib/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Question } from "@/lib/types";
-
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 type ResponseRow = {
   id: string;
@@ -60,7 +59,6 @@ function parseAnswerValue(value: string | string[]) {
     const parsed = JSON.parse(value);
     if (Array.isArray(parsed)) return parsed as string[];
   } catch {
-    // ignore
   }
   return value;
 }
@@ -71,7 +69,7 @@ async function extractError(res: Response) {
     if (typeof data?.message === "string") return data.message;
     if (Array.isArray(data?.message)) return data.message.join(", ");
   } catch {
-    // ignore
+    
   }
   return res.statusText;
 }

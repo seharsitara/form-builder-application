@@ -1,7 +1,7 @@
 import { User, UserRole } from "./types";
+import { API_BASE } from "./config";
 
 const SESSION_KEY = "form_builder_session";
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export type AuthResult = {
   user: User;
@@ -77,7 +77,6 @@ async function extractError(res: Response) {
     if (typeof data?.message === "string") return data.message;
     if (Array.isArray(data?.message)) return data.message.join(", ");
   } catch {
-    // ignore parse errors
   }
   return res.statusText;
 }
