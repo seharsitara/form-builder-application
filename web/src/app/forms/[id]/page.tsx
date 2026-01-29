@@ -117,7 +117,7 @@ export default function PublicFormPage() {
   };
 
   return (
-    <div className="min-h-screen px-4 pb-16 pt-10 text-neutral-900">
+    <div className="min-h-screen px-4 pb-16 pt-10 text-neutral-900 bg-neutral-100">
       <div className="mx-auto max-w-4xl space-y-6">
         <header className="flex flex-col gap-3 rounded-2xl border border-white/20 bg-white/80 p-6 shadow-lg backdrop-blur">
           <div className="flex items-center justify-between gap-4">
@@ -145,7 +145,7 @@ export default function PublicFormPage() {
 
         <Card>
           <CardContent className="space-y-4 p-5">
-            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-4 mt-6">
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-semibold text-neutral-800">Your details</p>
                 <p className="text-xs text-neutral-600">Shared with the form owner to help identify your response.</p>

@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-transparent">
-      <header className="sticky top-0 z-10 border-b border-white/30 bg-white/80 backdrop-blur">
+    <div className="min-h-screen bg-neutral-100">
+      <header className="sticky top-0 z-10 border-b border-white/30 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <Link href="/" className="text-lg font-semibold text-neutral-900">
             Form Builder
           </Link>
           <div className="flex items-center gap-2">
-            <Link href="/auth/login" className="text-sm text-neutral-700 hover:text-neutral-900">
+            <Link href="/auth/login" className="text-sm text-neutral-700 hover:text-neutral-900 bg-neutral-100 h-9 px-3 inline-flex items-center justify-center rounded-md">
               Login
             </Link>
             <Link href="/auth/register">
@@ -24,7 +24,6 @@ export default function Home() {
 
       <main className="mx-auto flex max-w-5xl flex-col items-center gap-10 px-4 py-16 text-center">
         <div className="space-y-4">
-          <p className="text-sm uppercase tracking-[0.2em] text-neutral-500">Start here</p>
           <h1 className="text-4xl font-semibold text-neutral-900 sm:text-5xl">
             Sign up or log in to build and share forms
           </h1>
@@ -44,7 +43,7 @@ export default function Home() {
             </Button>
           </Link>
           <Link href="/dashboard">
-            <Button variant="ghost" className="px-6 py-3 text-base text-neutral-700">
+            <Button variant="ghost" className="px-6 py-3 text-base text-neutral-700 bg-white/90 hover:bg-white/70">
               Go to dashboard
             </Button>
           </Link>

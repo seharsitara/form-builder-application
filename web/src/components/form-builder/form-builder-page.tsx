@@ -238,7 +238,7 @@ export function FormBuilderPage({ section = "build" }: FormBuilderPageProps) {
   };
 
   return (
-    <div className="min-h-screen px-4 pb-16 pt-10 text-neutral-900">
+    <div className="min-h-screen px-4 pb-16 pt-10 text-neutral-900 bg-neutral-100">
       <div className="mx-auto flex max-w-6xl gap-6">
         <aside className="sticky top-6 hidden w-64 shrink-0 flex-col gap-3 rounded-2xl border border-white/20 bg-neutral-900/90 p-4 shadow-xl backdrop-blur md:flex">
           <div className="mb-3 text-sm font-semibold text-white/90">Navigate</div>

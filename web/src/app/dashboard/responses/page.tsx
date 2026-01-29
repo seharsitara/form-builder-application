@@ -178,7 +178,7 @@ export default function ResponsesPage() {
   if (!session) return <p className="p-6 text-sm text-neutral-600">Redirecting to login...</p>;
 
   return (
-    <div className="min-h-screen bg-neutral-50 px-4 py-10">
+    <div className="min-h-screen bg-neutral-100 px-4 py-10">
       <div className="mx-auto flex max-w-6xl flex-col gap-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div>
